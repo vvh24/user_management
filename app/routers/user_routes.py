@@ -35,6 +35,8 @@ from app.dependencies import get_settings
 from app.services.email_service import EmailService
 from typing import List, Optional #added to run test 
 from datetime import datetime #imported datetime 
+from fastapi import Query #imported to add pagination and sorting 
+
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 settings = get_settings()
@@ -80,7 +82,12 @@ async def get_user(user_id: UUID, request: Request, db: AsyncSession = Depends(g
 # This approach not only ensures that the API is secure and efficient but also promotes a better client
 # experience by adhering to REST principles and providing self-discoverable operations.
 
-@router.get("/users/search", response_model=List[UserResponse], name="search_users", tags=["User Management Requires (Admin or Manager Roles)"])
+@router.get(
+    "/users/search",
+    response_model=List[UserResponse],
+    name="search_users",
+    tags=["User Management Requires (Admin or Manager Roles)"],
+)
 async def search_users(
     nickname: Optional[str] = Query(None, description="Filter by nickname"),
     email: Optional[str] = Query(None, description="Filter by email"),
@@ -88,11 +95,14 @@ async def search_users(
     is_locked: Optional[bool] = Query(None, description="Filter by account lock status"),
     created_at_start: Optional[datetime] = Query(None, description="Start of registration date range"),
     created_at_end: Optional[datetime] = Query(None, description="End of registration date range"),
+    skip: int = Query(0, description="Number of records to skip for pagination"),  # Pagination
+    limit: int = Query(10, description="Maximum number of records to return"),  # Pagination
+    sort_by: Optional[str] = Query("created_at:asc", description="Field to sort by (e.g., created_at:asc, nickname:desc)"),  # Sorting
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))
+    current_user: dict = Depends(require_role(["ADMIN", "MANAGER"])),
 ):
     """
-    Search for users based on optional filters.
+    Search for users based on optional filters with pagination and sorting.
 
     Parameters:
     - nickname: Partial match for user nickname.
@@ -101,9 +111,9 @@ async def search_users(
     - is_locked: Filter by account lock status.
     - created_at_start: Start of registration date range.
     - created_at_end: End of registration date range.
-
-    Returns:
-    - A list of users matching the search criteria.
+    - skip: Number of records to skip for pagination.
+    - limit: Maximum number of records to return.
+    - sort_by: Field and direction to sort by (e.g., nickname:asc, created_at:desc).
     """
     filters = {
         "nickname": nickname,
@@ -113,9 +123,16 @@ async def search_users(
         "created_at_start": created_at_start,
         "created_at_end": created_at_end,
     }
-    users = await UserService.search_users(db, filters)
+
+    # Parse sort_by into field and direction
+    sort_field, _, sort_order = sort_by.partition(":")
+    sort_direction = asc if sort_order.lower() == "asc" else desc
+
+    # Call the updated service method
+    users = await UserService.search_users(db, filters, skip, limit, sort_field, sort_direction)
     if not users:
         raise HTTPException(status_code=404, detail="No users found with the given criteria")
+
     return [UserResponse.model_validate(user) for user in users]
 
 @router.put("/users/{user_id}", response_model=UserResponse, name="update_user", tags=["User Management Requires (Admin or Manager Roles)"])
