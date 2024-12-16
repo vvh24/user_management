@@ -78,6 +78,44 @@ async def get_user(user_id: UUID, request: Request, db: AsyncSession = Depends(g
 # This approach not only ensures that the API is secure and efficient but also promotes a better client
 # experience by adhering to REST principles and providing self-discoverable operations.
 
+@router.get("/users/search", response_model=List[UserResponse], name="search_users", tags=["User Management Requires (Admin or Manager Roles)"])
+async def search_users(
+    nickname: Optional[str] = Query(None, description="Filter by nickname"),
+    email: Optional[str] = Query(None, description="Filter by email"),
+    role: Optional[str] = Query(None, description="Filter by role"),
+    is_locked: Optional[bool] = Query(None, description="Filter by account lock status"),
+    created_at_start: Optional[datetime] = Query(None, description="Start of registration date range"),
+    created_at_end: Optional[datetime] = Query(None, description="End of registration date range"),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))
+):
+    """
+    Search for users based on optional filters.
+
+    Parameters:
+    - nickname: Partial match for user nickname.
+    - email: Partial match for user email.
+    - role: Exact match for user role (e.g., ADMIN, MANAGER).
+    - is_locked: Filter by account lock status.
+    - created_at_start: Start of registration date range.
+    - created_at_end: End of registration date range.
+
+    Returns:
+    - A list of users matching the search criteria.
+    """
+    filters = {
+        "nickname": nickname,
+        "email": email,
+        "role": role,
+        "is_locked": is_locked,
+        "created_at_start": created_at_start,
+        "created_at_end": created_at_end,
+    }
+    users = await UserService.search_users(db, filters)
+    if not users:
+        raise HTTPException(status_code=404, detail="No users found with the given criteria")
+    return [UserResponse.model_validate(user) for user in users]
+    
 @router.put("/users/{user_id}", response_model=UserResponse, name="update_user", tags=["User Management Requires (Admin or Manager Roles)"])
 async def update_user(user_id: UUID, user_update: UserUpdate, request: Request, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
     """

@@ -59,32 +59,56 @@ class UserService:
                 return None
             validated_data['hashed_password'] = hash_password(validated_data.pop('password'))
             new_user = User(**validated_data)
-            new_nickname = generate_nickname()
-            while await cls.get_by_nickname(session, new_nickname):
-                new_nickname = generate_nickname()
-            new_user.nickname = new_nickname
-            logger.info(f"User Role: {new_user.role}")
-            user_count = await cls.count(session)
-            new_user.role = UserRole.ADMIN if user_count == 0 else UserRole.ANONYMOUS            
-            if new_user.role == UserRole.ADMIN:
-                new_user.email_verified = True
-
-            else:
-                new_user.verification_token = generate_verification_token()
-                await email_service.send_verification_email(new_user)
-
+            new_user.verification_token = generate_verification_token()
+            # new_nickname = generate_nickname()
+            # while await cls.get_by_nickname(session, new_nickname):
+            #     new_nickname = generate_nickname()
+            # new_user.nickname = new_nickname
             session.add(new_user)
             await session.commit()
+            await email_service.send_verification_email(new_user)
             return new_user
         except ValidationError as e:
             logger.error(f"Validation error during user creation: {e}")
             return None
 
+    @classmethod #adding this new method for filtering purposes 12/11/24 vvh
+    async def search_users(cls, session: AsyncSession, filters: Dict[str, Optional[str]]) -> List[User]:
+        """
+        Search for users based on optional filters.
+
+        :param session: AsyncSession for database interaction.
+        :param filters: Dictionary of search filters.
+        :return: List of User objects that match the filters.
+        """
+        query = select(User)
+
+        # Apply filters dynamically
+        if 'nickname' in filters and filters['nickname']:
+            query = query.filter(User.nickname.ilike(f"%{filters['nickname']}%"))
+        if 'email' in filters and filters['email']:
+            query = query.filter(User.email.ilike(f"%{filters['email']}%"))
+        if 'role' in filters and filters['role']:
+            query = query.filter(User.role == filters['role'])
+        if 'is_locked' in filters and filters['is_locked'] is not None:
+            query = query.filter(User.is_locked == filters['is_locked'])
+        if 'created_at_start' in filters and 'created_at_end' in filters:
+            query = query.filter(
+                and_(
+                    User.created_at >= filters['created_at_start'],
+                    User.created_at <= filters['created_at_end']
+                )
+            )
+
+        # Execute query
+        result = await cls._execute_query(session, query)
+        return result.scalars().all() if result else []
+
     @classmethod
     async def update(cls, session: AsyncSession, user_id: UUID, update_data: Dict[str, str]) -> Optional[User]:
         try:
             # validated_data = UserUpdate(**update_data).dict(exclude_unset=True)
-            validated_data = UserUpdate(**update_data).model_dump(exclude_unset=True)
+            validated_data = UserUpdate(**update_data).dict(exclude_unset=True)
 
             if 'password' in validated_data:
                 validated_data['hashed_password'] = hash_password(validated_data.pop('password'))
