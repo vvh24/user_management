@@ -7,6 +7,7 @@ from app.models.user_model import User, UserRole
 from app.services.user_service import UserService
 from app.utils.nickname_gen import generate_nickname
 from app.utils.security import hash_password
+from sqlalchemy import asc, desc
 
 pytestmark = pytest.mark.asyncio
 
@@ -143,3 +144,22 @@ async def test_search_users_with_filters(db_session):
 
     # Assert: Ensure all users in the range are returned
     assert len(results) == 2
+
+#adding test for pagination and sorting
+async def test_search_users_with_pagination_and_sorting(db_session):
+    # Arrange: Add users to the database
+    users = [
+        User(nickname=f"user{i:02d}", email=f"user{i}@example.com", role=UserRole.ADMIN, created_at=datetime(2023, 1, i, 0, 0, 0), hashed_password=hash_password("StrongPassword123"))
+        for i in range(1, 21)
+    ]
+    db_session.add_all(users)
+    await db_session.commit()
+
+    # Act: Fetch first 10 users sorted by nickname in ascending order
+    filters = {}
+    results = await UserService.search_users(db_session, filters, skip=0, limit=10, sort_field="nickname", sort_direction="asc")
+
+    # Assert: Ensure pagination and sorting work correctly
+    assert len(results) == 10
+    assert results[0].nickname == "user01"
+    assert results[-1].nickname == "user10"

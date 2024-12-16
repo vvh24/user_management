@@ -16,6 +16,8 @@ from app.services.email_service import EmailService
 from app.models.user_model import UserRole
 import logging
 from sqlalchemy.sql import and_
+from sqlalchemy import asc, desc
+from sqlalchemy.orm import aliased
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -73,37 +75,52 @@ class UserService:
             logger.error(f"Validation error during user creation: {e}")
             return None
 
-    @classmethod #adding this new method for filtering purposes 12/11/24 vvh
-    async def search_users(cls, session: AsyncSession, filters: Dict[str, Optional[str]]) -> List[User]:
+    @classmethod
+    async def search_users(cls, session: AsyncSession, filters: Dict[str, Optional[str]], skip: int = 0, limit: int = 10, sort_field: Optional[str] = None, sort_direction: str = "asc") -> List[User]:
         """
-        Search for users based on optional filters.
+        Search for users with optional filters, pagination, and sorting.
 
         :param session: AsyncSession for database interaction.
         :param filters: Dictionary of search filters.
-        :return: List of User objects that match the filters.
+        :param skip: Offset for pagination.
+        :param limit: Limit for pagination.
+        :param sort_field: Field to sort by.
+        :param sort_direction: Sorting direction ("asc" or "desc").
+        :return: List of User objects that match the criteria.
         """
         query = select(User)
 
         # Apply filters dynamically
-        if 'nickname' in filters and filters['nickname']:
+        if "nickname" in filters and filters["nickname"]:
             query = query.filter(User.nickname.ilike(f"%{filters['nickname']}%"))
-        if 'email' in filters and filters['email']:
+        if "email" in filters and filters["email"]:
             query = query.filter(User.email.ilike(f"%{filters['email']}%"))
-        if 'role' in filters and filters['role']:
-            query = query.filter(User.role == filters['role'])
-        if 'is_locked' in filters and filters['is_locked'] is not None:
-            query = query.filter(User.is_locked == filters['is_locked'])
-        if 'created_at_start' in filters and 'created_at_end' in filters:
+        if "role" in filters and filters["role"]:
+            query = query.filter(User.role == filters["role"])
+        if "is_locked" in filters and filters["is_locked"] is not None:
+            query = query.filter(User.is_locked == filters["is_locked"])
+        if "created_at_start" in filters and "created_at_end" in filters:
             query = query.filter(
                 and_(
-                    User.created_at >= filters['created_at_start'],
-                    User.created_at <= filters['created_at_end']
+                    User.created_at >= filters["created_at_start"],
+                    User.created_at <= filters["created_at_end"]
                 )
             )
 
+        # Apply sorting
+        if sort_field:
+            sort_column = getattr(User, sort_field, None)
+            if sort_column is not None:
+                query = query.order_by(asc(sort_column) if sort_direction == "asc" else desc(sort_column))
+            else:
+                raise ValueError(f"Invalid sort field: {sort_field}")
+
+        # Apply pagination
+        query = query.offset(skip).limit(limit)
+
         # Execute query
-        result = await cls._execute_query(session, query)
-        return result.scalars().all() if result else []
+        result = await session.execute(query)
+        return result.scalars().all()
 
     @classmethod
     async def update(cls, session: AsyncSession, user_id: UUID, update_data: Dict[str, str]) -> Optional[User]:
