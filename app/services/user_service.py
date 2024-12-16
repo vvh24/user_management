@@ -15,6 +15,7 @@ from uuid import UUID
 from app.services.email_service import EmailService
 from app.models.user_model import UserRole
 import logging
+from sqlalchemy.sql import and_
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

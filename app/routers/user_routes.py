@@ -21,7 +21,7 @@ Key Highlights:
 from builtins import dict, int, len, str
 from datetime import timedelta
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Response, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Request,  Query
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_current_user, get_db, get_email_service, require_role
@@ -33,6 +33,8 @@ from app.services.jwt_service import create_access_token
 from app.utils.link_generation import create_user_links, generate_pagination_links
 from app.dependencies import get_settings
 from app.services.email_service import EmailService
+from typing import List, Optional #added to run test 
+from datetime import datetime #imported datetime 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 settings = get_settings()
@@ -115,7 +117,7 @@ async def search_users(
     if not users:
         raise HTTPException(status_code=404, detail="No users found with the given criteria")
     return [UserResponse.model_validate(user) for user in users]
-    
+
 @router.put("/users/{user_id}", response_model=UserResponse, name="update_user", tags=["User Management Requires (Admin or Manager Roles)"])
 async def update_user(user_id: UUID, user_update: UserUpdate, request: Request, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
     """
