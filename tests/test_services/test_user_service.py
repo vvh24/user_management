@@ -163,3 +163,31 @@ async def test_search_users_with_pagination_and_sorting(db_session):
     assert len(results) == 10
     assert results[0].nickname == "user01"
     assert results[-1].nickname == "user10"
+
+# Test for full-text search
+async def test_search_users_with_full_text_search(db_session):
+    # Arrange: Add users to the database
+    user1 = User(
+        nickname="valeria",
+        email="valeria@example.com",
+        bio="I love programming and hiking",
+        hashed_password=hash_password("StrongPassword123"),
+        role=UserRole.ADMIN,  # Add role
+    )
+    user2 = User(
+        nickname="john",
+        email="john@example.com",
+        bio="I enjoy cooking and traveling",
+        hashed_password=hash_password("AnotherStrongPassword123"),
+        role=UserRole.MANAGER,  # Add role
+    )
+    db_session.add_all([user1, user2])
+    await db_session.commit()
+
+    # Act: Perform full-text search
+    filters = {"search_term": "programming"}
+    results = await UserService.search_users(db_session, filters)
+
+    # Assert: Verify the correct user is returned
+    assert len(results) == 1
+    assert results[0].nickname == "valeria"
