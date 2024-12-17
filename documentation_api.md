@@ -85,14 +85,14 @@ Implementing the User Search and Filtering feature provided valuable insights in
 ### DockerHub Deployment
 
 #### Deployment Link
-[DockerHub Deployment Link](https://hub.docker.com/r/your_dockerhub_username/your_repository_name)
+[DockerHub Deployment Link](https://hub.docker.com/r/vvhc246/user_management-fastapi)
 
 #### Evidence of Successful Deployment
-![Successful Deployment Screenshot](path/to/screenshot.png)
+![Successful Deployment Screenshot](dockerimage.png)
 
 #### Steps to Deploy
-1. Build the Docker image using `docker build -t your_dockerhub_username/your_repository_name .`.
-2. Push the image to DockerHub using `docker push your_dockerhub_username/your_repository_name`.
+1. Build the Docker image using `docker build -t vvhc246/user_management-fastapi .`.
+2. Push the image to DockerHub using `docker push vvhc246/user_management-fastapi`.
 3. Ensure the deployment is running and accessible via the provided API endpoint.
 
 ---
