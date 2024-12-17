@@ -71,7 +71,7 @@ This feature uses PostgreSQL's full-text search capabilities. The `search_vector
 ### Reflection on Implementation
 
 #### Learnings
-Implementing the User Search and Filtering feature provided valuable insights into database optimization and the practical application of full-text search using PostgreSQL. It also highlighted the importance of maintaining clean and reusable code in service methods, as well as the significance of API documentation for usability. For this project, the helped of ChatGPT was a plus since it helped me going through every error, I encountered during the way and helped me not only solved it, but understand why I was doing what I did, the importance behind it, and also being more aware of the changes I was making in order for the feature implemented (user search and filtering) to work. 
+Implementing the User Search and Filtering feature provided valuable insights into database optimization and the practical application of full-text search using PostgreSQL. It also highlighted the importance of maintaining clean and reusable code in service methods, as well as the significance of API documentation for usability. For this project, the helped of class documentation and ChatGPT was a plus since it helped me going through every error, I encountered during the way and helped me not only solved it, but understand why I was doing what I did, the importance behind it, and also being more aware of the changes I was making in order for the feature implemented (user search and filtering) to work. 
 
 #### Challenges and Solutions
 1. **Database Migration Errors**: The `users` table was initially missing, causing test failures. This was resolved by verifying migrations and re-applying them correctly.
