@@ -25,15 +25,53 @@ logger = logging.getLogger(__name__)
 
 class UserService:
     @classmethod
-    async def _execute_query(cls, session: AsyncSession, query):
-        try:
-            result = await session.execute(query)
-            await session.commit()
-            return result
-        except SQLAlchemyError as e:
-            logger.error(f"Database error: {e}")
-            await session.rollback()
-            return None
+    async def search_users(cls, session: AsyncSession, filters: Dict[str, Optional[str]], skip: int = 0, limit: int = 10, sort_field: Optional[str] = None, sort_direction: Optional[str] = None) -> List[User]:
+        """
+        Enhanced search for users with full-text search, pagination, and sorting.
+
+        :param session: AsyncSession for database interaction.
+        :param filters: Dictionary of search filters.
+        :param skip: Number of records to skip for pagination.
+        :param limit: Number of records to fetch for pagination.
+        :param sort_field: Field to sort by.
+        :param sort_direction: Sort direction ("asc" or "desc").
+        :return: List of User objects that match the filters.
+        """
+        query = select(User)
+
+        # Apply filters dynamically
+        if 'nickname' in filters and filters['nickname']:
+            query = query.filter(User.nickname.ilike(f"%{filters['nickname']}%"))
+        if 'email' in filters and filters['email']:
+            query = query.filter(User.email.ilike(f"%{filters['email']}%"))
+        if 'role' in filters and filters['role']:
+            query = query.filter(User.role == filters['role'])
+        if 'is_locked' in filters and filters['is_locked'] is not None:
+            query = query.filter(User.is_locked == filters['is_locked'])
+        if 'created_at_start' in filters and 'created_at_end' in filters:
+            query = query.filter(
+                and_(
+                    User.created_at >= filters['created_at_start'],
+                    User.created_at <= filters['created_at_end']
+                )
+            )
+        
+        # Add full-text search if search term is provided
+        if 'search_term' in filters and filters['search_term']:
+            query = query.filter(
+                User.search_vector.op('@@')(pg_func.plainto_tsquery('english', filters['search_term']))
+            )
+
+        # Apply sorting
+        if sort_field and hasattr(User, sort_field):
+            direction = asc if sort_direction == "asc" else desc
+            query = query.order_by(direction(getattr(User, sort_field)))
+
+        # Apply pagination
+        query = query.offset(skip).limit(limit)
+
+        result = await session.execute(query)
+        return result.scalars().all()
 
     @classmethod
     async def _fetch_user(cls, session: AsyncSession, **filters) -> Optional[User]:

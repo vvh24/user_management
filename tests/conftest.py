@@ -26,6 +26,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, scoped_session
 from faker import Faker
+from sqlalchemy.sql import text  # Import text for raw SQL statements
 
 # Application-specific imports
 from app.main import app
@@ -75,9 +76,10 @@ def initialize_database():
 @pytest.fixture(scope="function", autouse=True)
 async def setup_database():
     async with engine.begin() as conn:
+        # Create all tables before the test
         await conn.run_sync(Base.metadata.create_all)
-        # Clear the users table explicitly after creating all tables
-        await conn.execute('TRUNCATE TABLE users CASCADE')
+        # Clear the 'users' table before each test
+        await conn.execute(text('TRUNCATE TABLE users CASCADE'))
     yield
     async with engine.begin() as conn:
         # Drop all tables after the test

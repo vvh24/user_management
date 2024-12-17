@@ -1,12 +1,12 @@
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy import Column, String, Integer, DateTime, Boolean, func, Enum as SQLAlchemyEnum, text
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.event import listen
 from app.database import Base
 import uuid
 from datetime import datetime
 from enum import Enum
-from sqlalchemy.dialects.postgresql import UUID  
-
+from sqlalchemy.dialects.postgresql import UUID
 
 class UserRole(Enum):
     """Enumeration of user roles within the application, stored as ENUM in the database."""
@@ -67,3 +67,10 @@ class User(Base):
         """Updates the professional status and logs the update time."""
         self.is_professional = status
         self.professional_status_updated_at = func.now()
+
+# Automatically update the search_vector column on INSERT and UPDATE
+def update_search_vector(mapper, connection, target):
+    target.search_vector = func.to_tsvector('english', f"{target.nickname} {target.bio}")
+
+listen(User, 'before_insert', update_search_vector)
+listen(User, 'before_update', update_search_vector)
