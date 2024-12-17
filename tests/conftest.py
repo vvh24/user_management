@@ -76,10 +76,12 @@ def initialize_database():
 async def setup_database():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Clear the users table explicitly after creating all tables
+        await conn.execute('TRUNCATE TABLE users CASCADE')
     yield
     async with engine.begin() as conn:
-        # you can comment out this line during development if you are debugging a single test
-         await conn.run_sync(Base.metadata.drop_all)
+        # Drop all tables after the test
+        await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
 
 @pytest.fixture(scope="function")
