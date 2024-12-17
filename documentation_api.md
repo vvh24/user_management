@@ -1,7 +1,5 @@
 ## User Search and Filtering API Documentation
-
-### Endpoint
-**`GET /users`**
+Hello! My name is Valeria Heredia and for my final project from IS218:Building Web Applications, I chose the 'User Search and Filtering' feature. In here, you will be able to read the description of my feature applied, and reflection at the end of it.
 
 ### Description
 This endpoint allows administrators to search for and filter users based on various attributes such as nickname, email, role, and more. It also supports advanced full-text search, pagination, and sorting to manage large datasets efficiently.
