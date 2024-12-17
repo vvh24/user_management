@@ -5,8 +5,8 @@ Hello! My name is Valeria Heredia and for my final project from IS218:Building W
 This endpoint allows administrators to search for and filter users based on various attributes such as nickname, email, role, and more. It also supports advanced full-text search, pagination, and sorting to manage large datasets efficiently.
 
 ---
-
-### Parameters
+:page_facing_up:
+### Parameters:writing_hand:
 
 | Parameter           | Type    | Required | Description                                                 |
 |---------------------|---------|----------|-------------------------------------------------------------|
@@ -50,8 +50,6 @@ GET /users?search_term=programming&role=ADMIN&sort_field=created_at&sort_directi
 
 ---
 
-## Reflection Document
-
 ### New Feature: User Search and Filtering
 
 #### Purpose
@@ -68,7 +66,7 @@ This feature uses PostgreSQL's full-text search capabilities. The `search_vector
 
 ---
 
-### Reflection on Implementation
+### Reflection on Implementation:page_facing_up:
 
 #### Learnings
 Implementing the User Search and Filtering feature provided valuable insights into database optimization and the practical application of full-text search using PostgreSQL. It also highlighted the importance of maintaining clean and reusable code in service methods, as well as the significance of API documentation for usability. For this project, the helped of class documentation and ChatGPT was a plus since it helped me going through every error, I encountered during the way and helped me not only solved it, but understand why I was doing what I did, the importance behind it, and also being more aware of the changes I was making in order for the feature implemented (user search and filtering) to work. 
@@ -88,7 +86,7 @@ Implementing the User Search and Filtering feature provided valuable insights in
 #### Evidence of Successful Deployment
 ![Successful Deployment Screenshot](dockerimage.png)
 
-#### Steps to Deploy
+#### Steps to Deploy:computer:
 1. Build the Docker image using `docker build -t vvhc246/user_management-fastapi .`.
 2. Push the image to DockerHub using `docker push vvhc246/user_management-fastapi`.
 3. Ensure the deployment is running and accessible via the provided API endpoint.
